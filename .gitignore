@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/LogMacinator/.store/nbgv/3.7.115
+/LogMacinator/nbgv.exe
