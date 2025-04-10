@@ -88,13 +88,17 @@ C:\MACINATOR\
     │   ├── AppraiserLog.json
     │   └── SetupACTLog.json
 ```
-### Database Output
-If you want to save the output directly into a database, you need to configure the connection string in the `appsettings.json` file. The tool supports SQL Server, MySQL, and PostgreSQL. Modify the `ConnectionString` section accordingly:
+### Database Output :1234:
+If you want to save the output directly into a database, you need to change the configuration file appsettings.json accordingly.
+1. Set the `SaveToDatabase` option to `true`
+1. Set the `DatabaseConnectionSettings` section with the appropriate connection string for your database. The tool supports SQL Server, MySQL, and PostgreSQL. Modify the `ConnectionString` section accordingly:
 ```json
-"ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=LogCruncherDB;User Id=myusername;Password=mypassword;"
-}
+        "SaveToDatabase": true,
+        "DatabaseConnectionSettings": {
+            "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=LogCruncher;Trusted_Connection=True;TrustServerCertificate=True;",
+            "DatabaseProvider": "SqlServer" // Options: SqlServer, PostgreSQL, MySQL
 ```
+
 > Note: Make sure to replace the connection string with your actual database connection details.
 
 ## Contributing :handshake:
