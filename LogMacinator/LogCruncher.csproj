@@ -5,7 +5,15 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ApplicationIcon>gear_icon.ico</ApplicationIcon>
+    <Authors>RGP Bytes</Authors>
+    <Copyright>$(Authors) </Copyright>
+    <Description>Windows 11 Upgrade Log Cruncher</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="gear_icon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
