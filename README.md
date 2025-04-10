@@ -29,6 +29,8 @@ These files are generated during the upgrade process and can be found within `C:
 - **Log processing as a service**: Automate log processing every N minutes, given a root path where to look for logs.
 - **Structured output**: Output files are saved in JSON format, organized in a dedicated folder for each computer.
 - **Database support**: The tool can be configured to save the output directly into a database, allowing for easy querying and analysis.
+- **Scheduling**: The service can be scheduled to run at specific intervals leveraging *Quartz.NET* Nuget package making use of CRON expressions.
+- **Logging**: The tool uses *Serilog* for logging, providing detailed logs of the processing steps and any errors encountered. 
 
 
 ## Usage
@@ -48,13 +50,13 @@ Before using Log Cruncher, configure the `appsettings.json` file by modifying th
 > Note: Paths must be written using double backslashes `\\`.
 
 
-## How to run
-### Execution
+### How to run :runner:
+
 1. Download latest release of the solution from [Releases](https://github.com/robgrame/Windows11.Upgrade.LogCruncher/releases)
 1. Extract the contents of the archive `LogMacinator_vX.X.X.zip`.
 1. Locate the executable `LogCruncher.exe` and the `appsettings.json` file.
 
-#### Console Mode
+#### Console Mode :computer:
 Modify the `appsettings.json` file to set the paths for logs and output. Then, run the tool in console mode to process the logs immediately:
 
 Run the tool in console mode to process the logs immediately:
@@ -66,7 +68,7 @@ or
 ```bash
 LogCruncher.exe -c -L C:\\MACINATOR\\Clients\\ -O C:\\MACINATOR\\
 ```
-#### Service Mode
+#### Service Mode :gear:
 Before proceeding with running the tool as a service, ensure that you have configured the `appsettings.json` with exptected schedule and paths. The service will run in the background and process logs every N minutes.
 
 The schedule of the service can be configured in the `appsettings.json` file under the `Quartz` section:
@@ -145,7 +147,7 @@ LogCruncher.exe -s
 This will start the tool as a background service, processing logs every N minutes. The service will look for logs in the specified root path and save the output in the designated output path.
 
 
-### Output
+### Output :door:
 The output files will be saved in JSON format, organized in a folder named after the computer where the tool is executed. The folder structure will look like this:
 ```
 C:\MACINATOR\
@@ -169,6 +171,68 @@ If you want to save the output directly into a database, you need to change the 
 
 > Note: Make sure to replace the connection string with your actual database connection details.
 
+## Logging :file_cabinet:
+The solution is supposed to log to file either when running as a console or as a service.
+Logging configuration is defined into a separate file `logging.json`. You can modify the values as needed to match your environment and requirements.
+
+The logging configuration is based on Serilog, a popular logging library for .NET applications. The configuration includes settings for the logging level, output folder path, and file name prefix.
+- *MinimumLevel*: The minimum logging level for the service. You can set this to `Information`, `Warning`, `Error`, etc., based on your needs.
+
+- *WriteTo*: The output settings for the logs. In this case, it is configured to write logs to a file.
+
+- *File*: The file settings for the log output. You can modify the following properties:
+    - *Path*: The path where the log files will be saved. Make sure this path exists and is accessible by the service.
+    - *FileNamePrefix*: The prefix for the log file names. The service will append a timestamp to this prefix to create unique file names.
+    - *RollingInterval*: The interval for rolling over the log files. You can set this to `Day`, `Hour`, etc., based on your needs.
+    - *RetainedFileCountLimit*: The maximum number of log files to retain. Older files will be deleted when this limit is reached.
+
+    For convenience we recommend not to change the configuration except for log file path and eventually the FileNamePrefix but leave remainder configuration as is.
+    In addition set the `rollingInterval` to `Day` and the `retainedFileCountLimit` to 5, so that you can keep a history of the last 5 days of logs.
+    For complete configuration, you can use the following example as a reference:
+
+    ```json
+    "Serilog": {
+        "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.File" ],
+        "MinimumLevel": {
+            "Default": "Debug",
+            "Override": {
+                "Microsoft": "Warning",
+                "System": "Warning",
+                "LogProcessor": "Debug",
+                "Quartz": "Warning"
+            }
+        },
+        "WriteTo": [
+            {
+                "Name": "Console",
+                "Args": {
+                    "theme": "Serilog.Sinks.SystemConsole.Themes.SystemConsoleTheme::Literate, Serilog.Sinks.Console",
+                    "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] \t [{SourceContext}] {Message:lj} {NewLine}{Exception}"
+
+                }
+
+            },
+            {
+                "Name": "File",
+                "Args": {
+                    "outputTemplate": "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} \t [{Level}] \t [{SourceContext}] \t {Properties} {Message}{NewLine}{Exception}",
+                    "path": "C:\\MACINATOR\\Logs\\Macinator.log",
+                    "encoding": "System.Text.UTF8Encoding", // utf-8, utf-16, utf-32"
+                    "rollingInterval": "Day",
+                    "rollOnFileSizeLimit": true,
+                    "retainedFileCountLimit": 5,
+                    "fileSizeLimitBytes": 10485760,
+                    "flushToDiskInterval": 1
+                }
+            }
+        ],
+        "Enrich": [ "FromLogContext", "WithMachineName", "WithProcessId", "WithThreadId" ],
+        "Properties": {
+            "Application": "LogMacinator"
+        }
+    }
+    ```
+
 ## Contributing :handshake:
 Contributions are welcome! Please follow these steps to contribute:
 
@@ -187,7 +251,7 @@ Contributions are welcome! Please follow these steps to contribute:
     ```
 5. Create a pull request.
 
-## Troubleshooting
+## Troubleshooting :hammer:
 If you encounter any issues while using Log Cruncher, please check the following:
 - Ensure that you have the correct version of .NET Core installed.
 - Ensure that the paths specified in the `appsettings.json` file are correct and accessible. 
