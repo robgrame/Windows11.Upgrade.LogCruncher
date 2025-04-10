@@ -60,11 +60,11 @@ Modify the `appsettings.json` file to set the paths for logs and output. Then, r
 Run the tool in console mode to process the logs immediately:
 
 ```bash
-LogCruncher.exe --console
+LogCruncher.exe --console -LogsRootPath C:\\MACINATOR\\Clients\\ -OutputPath C:\\MACINATOR\\
 ```
 or
 ```bash
-LogCruncher.exe -c
+LogCruncher.exe -c -L C:\\MACINATOR\\Clients\\ -O C:\\MACINATOR\\
 ```
 #### Service Mode
 To run the tool as a service, use the following command:
