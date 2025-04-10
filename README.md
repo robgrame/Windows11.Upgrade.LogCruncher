@@ -6,7 +6,8 @@
 ![Nuget](https://img.shields.io/badge/nuget-%230077B5.svg?style=for-the-badge&logo=nuget&logoColor=white)
 ![.Windows11](https://img.shields.io/badge/Windows%2011-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 
-## Overview
+
+## Overview :mag:
 You have tons of Windows 11 upgrade logs and you don't know how to analyze them?
 Log Cruncher is a tool designed to efficiently analyze and process log files. It is particularly useful for managing large amounts of logs generated during the upgrade to Windows 11, providing structured output in JSON format for easy consultation and analysis, or directly saved within a database.
 Windows 11 Upgrade produces a lot of logs, and it is difficult to analyze them all. Log Cruncher helps you to process these logs and extract useful information from them. It can be used to analyze logs from Windows 11 upgrade.
@@ -19,7 +20,7 @@ The solution is supposed to analyze specific log files generated during the upgr
 These files are generated during the upgrade process and can be found within `C:\$WINDOWS.~BT\Source\Panther` and contain information about the assessment of the system and the upgrade process itself. The tool is designed to extract relevant information from these files and save it in a humanr readable format for further analysis.
 
 
-## Requirements
+## Requirements :minidisc:
 - **Operating System**: any suppported Windows client/server version  Windows 10/11 or Windows Server 2016/2019/2022). Ideally this solution can be used also on any OS that supports .NET Core 9, although its worker service usage is only supported on Windows.
 - **Runtime**: .NET Core 9.0. You can download it from [here](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-9.0.3-windows-x64-installer).
 - **SQL engine**: If saving output to a database, a running SQL engine is required: SQL Server, MySQL, PostgreSQL. The tool is designed to work with any of these engines, but the connection string must be configured accordingly in the `appsettings.json` file.
@@ -34,7 +35,7 @@ These files are generated during the upgrade process and can be found within `C:
 
 
 ## Usage
-### Configuration
+### Configuration :gear:
 Before using Log Cruncher, configure the `appsettings.json` file by modifying the `LogProcessorSettings` section:
 
 - **LogsRootPath**: The path where the log files to be processed are located.
@@ -68,7 +69,7 @@ or
 ```bash
 LogCruncher.exe -c -L C:\\MACINATOR\\Clients\\ -O C:\\MACINATOR\\
 ```
-#### Service Mode :gear:
+#### Service Mode :kimono:
 Before proceeding with running the tool as a service, ensure that you have configured the `appsettings.json` with exptected schedule and paths. The service will run in the background and process logs every N minutes.
 
 The schedule of the service can be configured in the `appsettings.json` file under the `Quartz` section:
@@ -269,4 +270,20 @@ For any questions or feedback, you can reach me at [roberto@gramellini.net](mail
 
 ## Acknowledgements
 - Thanks to the .NET community for their support and contributions.
+
+## References
+- [Quartz.NET](https://www.quartz-scheduler.net/)
+- [Serilog](https://serilog.net/)
+- [Windows 11 Upgrade Logs](https://docs.microsoft.com/en-us/windows/deployment/update/windows-11-upgrade-logs)
+- [Windows 11 Upgrade](https://docs.microsoft.com/en-us/windows/deployment/update/windows-11-upgrade)
+
+### Author
+#### About Me :person_frowning:
+I am a Cloud Solution Architect and a passionate software engineer with a strong interest in cloud computing and automation. I have experience in developing applications using .NET technologies and have a keen interest in exploring new tools and frameworks. I enjoy solving complex problems and continuously learning to improve my skills.
+I believe in the power of open-source software and actively contribute to the community. I am always looking for new challenges and opportunities to grow as a developer.
+I am also a strong advocate for best practices in software development, including code quality, testing, and documentation. I strive to write clean, maintainable code and follow industry standards to ensure the success of my projects.
+
+ ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)[Roberto Gramellini](https://github.com/robgrame)
+
+![LinkwedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white) [Roberto Gramellini](https://www.linkedin.com/in/robertogramellini/)
 
