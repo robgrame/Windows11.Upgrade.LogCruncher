@@ -67,7 +67,74 @@ or
 LogCruncher.exe -c -L C:\\MACINATOR\\Clients\\ -O C:\\MACINATOR\\
 ```
 #### Service Mode
-To run the tool as a service, use the following command:
+Before proceeding with running the tool as a service, ensure that you have configured the `appsettings.json` with exptected schedule and paths. The service will run in the background and process logs every N minutes.
+
+The schedule of the service can be configured in the `appsettings.json` file under the `Quartz` section:
+You can modify the values as needed to match your environment and requirements.
+   The scheduling configuration is based on Quartz.NET, a powerful and flexible scheduling library for .NET applications. The configuration includes settings for the desired interval for the service to run, based on Quartz.NET cron expressions.
+
+   The solution is comprised of 2 jobs:
+   - **SetupACTLogProcessorJob**: This job processes the `SetupACT.log` file and extracts relevant information.
+   - **HumanReadableFileProcessorJob**: This job processes the `.4.4.0.1_APPRAISER_HumanReadable.xml` file and extracts relevant information.
+
+   Each job has its own configuration settings, including:
+   - *JobName*: The name of the job.
+   - *JobDescription*: A brief description of the job.
+   - *JobGroup*: The group to which the job belongs.   
+   - *TriggerName*: The name of the trigger that starts the job.
+   - *TriggerGroup*: The group to which the trigger belongs.
+   - *CronExpression*: The cron expression that defines the schedule for the service. You can modify this expression to set the desired interval for the service to run. For example:
+     - `0 0/5 * * * ?` - Every 5 minutes
+     - `0 0 12 * * ?` - Every day at noon
+     - `0 0 8-18 ? * MON-FRI` - Every hour from 8 AM to 6 PM on weekdays
+     For complete configuration, you can use the following example as a reference:
+     ```json
+        {
+          "Quartz": {
+            "CronExpression": "0 0/5 * * * ?"
+          }
+        }
+     ```
+     For a complete list of cron expressions and their meanings, you can refer to:
+     - [Quartz.NET Cron Trigger documentation](https://www.quartz-scheduler.net/documentation/quartz-3.x/tutorial/crontrigger.html)
+     - [CronMaker](https://www.cronmaker.com/) website
+     - [Cron Expression Generator & Explainer - Quartz](https://freeformatter.com/cron-expression-generator-quartz.html)
+     
+     For reference, here's the excerpt of the appsettings.json file for the Quartz section. This includes settings for the Quartz scheduler instance, thread pool, job store, and job details.
+        ```json
+            "Quartz": {
+                "QuartzScheduler": {
+                    "quartz.scheduler.instanceName": "MacinatorScheduler",
+                    "quartz.scheduler.instanceId": "AUTO",
+                    "quartz.threadPool.type": "Quartz.Simpl.SimpleThreadPool, Quartz",
+                    "quartz.threadPool.threadCount": "10",
+                    "quartz.threadPool.threadPriority": "Normal",
+                    "quartz.jobStore.misfireThreshold": "60000",
+                    "quartz.jobStore.type": "Quartz.Simpl.RAMJobStore, Quartz",
+                    "quartz.jobStore.clustered": "false"
+                },
+                "QuartzJobs": [
+                    {
+                        "JobName": "SetupACTLogProcessorJob",
+                        "JobDescription": "Analyze SetupACT.log",
+                        "JobGroup": "LogProcessorGroup",
+                        "TriggerName": "SetupACTLogProcessorTrigger",
+                        "TriggerGroup": "SetupACTLogProcessorTriggerGroup",
+                        "CronExpression": "30 */2 * ? * *"
+                    },
+                    {
+                        "JobName": "HumanReadableFileProcessorJob",
+                        "JobDescription": "Analyze Humanreadable xml file",
+                        "JobGroup": "LogProcessorGroup",
+                        "TriggerName": "HumanReadableFileTrigger",
+                        "TriggerGroup": "HumanReadableFileTriggerGroup",
+                        "CronExpression": "0 0/5 * ? * *"
+                    }
+                ]
+            }
+        ```
+
+To run the tool as a service, just use the following command:
 ```bash
 LogCruncher.exe --service
 ```
@@ -76,6 +143,7 @@ or
 LogCruncher.exe -s
 ```
 This will start the tool as a background service, processing logs every N minutes. The service will look for logs in the specified root path and save the output in the designated output path.
+
 
 ### Output
 The output files will be saved in JSON format, organized in a folder named after the computer where the tool is executed. The folder structure will look like this:
