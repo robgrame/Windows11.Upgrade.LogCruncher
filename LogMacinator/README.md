@@ -1,4 +1,26 @@
-# Windows 11 Upgrade | Log Cruncher
+# Log Cruncher | Windows 11 Upgrade Log Analyzer
+
+## Overview
+Hai grosse
+Log Cruncher è uno strumento progettato per analizzare e processare file di log in modo efficiente. È particolarmente utile per gestire grandi quantità di log generati durante l'aggiornamento a Windows 11, fornendo output strutturati in formato JSON per una facile consultazione e analisi, oppure salvati direttamente all'interno di un DB.
+
+## Features
+- **Elaborazione dei log in modalità console**: Esegui il tool manualmente per processare i file di log specificati.
+- **Esecuzione come servizio**: Automatizza l'elaborazione dei log ogni N minuti.
+- **Output strutturato**: I file di output vengono salvati in formato JSON, organizzati in una cartella dedicata per ogni computer.
+- **Configurazione personalizzabile**: Specifica i percorsi dei log e dell'output tramite un file di configurazione.
+- **Compatibilità con Windows 11**: Ottimizzato per l'ambiente Windows 11 e il runtime .NET 9.
+
+## Requirements
+- **Sistema operativo**: Windows 11.
+- **Runtime**: .NET Core 9.0. Puoi scaricarlo da [qui](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-9.0.3-windows-x64-installer).
+- **Permessi**: Accesso in lettura/scrittura ai percorsi specificati nel file di configurazione.
+
+## Usage
+### Configurazione
+Prima di utilizzare Log Cruncher, configura il file `appsettings.json` modificando la sezione `LogProcessorSettings`:
+
+
 
 Per utilizzarlo è necessario avere installato il runtime di .NET core 9.0 (https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-9.0.3-windows-x64-installer)
 

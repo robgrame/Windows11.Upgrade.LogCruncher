@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using LogMacinator.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SQLitePCL;
@@ -17,13 +18,13 @@ using Windows.Utils.Macinator.EF;
         private const string SetupActLogFilePattern = "setupact.log";
         private readonly ILogger<SetupACTLogProcessor> _logger;
         private readonly LogProcessorSettings _settings;
-        private readonly LogAnalysisContext _context;
+        private readonly IServiceProvider _serviceProvider;
 
-        public SetupACTLogProcessor(ILogger<SetupACTLogProcessor> logger, IOptions<LogProcessorSettings> settings, LogAnalysisContext context)
+        public SetupACTLogProcessor(ILogger<SetupACTLogProcessor> logger, IOptions<LogProcessorSettings> settings, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _settings = settings.Value;
-            _context = context;
+            _serviceProvider = serviceProvider;
         }
 
 
@@ -206,8 +207,18 @@ using Windows.Utils.Macinator.EF;
 
         public void InitializeDatabase()
         {
+            // Get LogAnalysisContext from serviceProvider
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetService<LogAnalysisContext>();
+
+            if (context == null)
+            {
+                _logger.LogError("LogAnalysisContext is null");
+                return;
+            }
+
             _logger.LogDebug("Initializing database...");
-            _context.Database.EnsureCreated();
+            context.Database.EnsureCreated();
             _logger.LogTrace("Database initialization completed.");
         }
 
@@ -229,8 +240,17 @@ using Windows.Utils.Macinator.EF;
 
                 if (_settings.SaveToDatabase)
                 {
+                    // Get LogAnalysisContext from serviceProvider
+                    using var scope = _serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetService<LogAnalysisContext>();
+                    if (context == null)
+                    {
+                        _logger.LogError("DB Context is null");
+                        return;
+                    }
+
                     var hash = ComputeHash(systemInfo, uncompleteAction);
-                    var existingRecord = await _context.LogAnalysisResults.FirstOrDefaultAsync(r => r.Hash == hash);
+                    var existingRecord = await context.LogAnalysisResults.FirstOrDefaultAsync(r => r.Hash == hash);
 
                     if (existingRecord != null)
                     {
@@ -251,12 +271,12 @@ using Windows.Utils.Macinator.EF;
 
 
                     _logger.LogDebug("Adding log analysis results to database...");
-                    _context.LogAnalysisResults.Add(efLogAnalysisResult);
+                    context.LogAnalysisResults.Add(efLogAnalysisResult);
                     _logger.LogTrace("Log analysis results saved to database.");
 
                     // Save changes to the database
                     _logger.LogDebug("Saving changes to the database...");
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                     _logger.LogTrace("Changes saved to the database.");
                 }
 
