@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "LogMacinator": {
+        "commandName": "Project",
+        //"commandLineArgs": "-c -L C:\\MACINATOR\\Clients\\ -O C:\\MACINATOR\\"
+        "commandLineArgs": "-s"
+    }
+  }
+}
