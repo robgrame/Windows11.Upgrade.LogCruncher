@@ -21,7 +21,7 @@ namespace LogCruncher.Data
         [Key]
         public int Id { get; set; }
 
-        public ICollection<RunInfoEntity>? RunInfo { get; set; }
+        public List<RunInfoEntity>? RunInfo { get; set; }
     }
 
     public class RunInfoEntity

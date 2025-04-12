@@ -89,7 +89,7 @@ namespace LogCruncher.Processor
         {
             try
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(HumanReadableOutput));
+                XmlSerializer serializer = new XmlSerializer(typeof(HumanReadableOutputEntity));
                 using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
                 {
                     var result = await Task.Run(() => serializer.Deserialize(fileStream) as HumanReadableOutputEntity);
