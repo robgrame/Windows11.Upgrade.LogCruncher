@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Utils.Macinator.Config;
 
-namespace LogMacinator.Jobs
+namespace LogCruncher.Jobs
 {
     internal class WorkerJobsSetup : IConfigureOptions<QuartzOptions>
     {

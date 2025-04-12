@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Utils.Macinator.Processor;
 
-namespace LogMacinator.Jobs
+namespace LogCruncher.Jobs
 {
     internal class SetupActLogProcessorJob : IJob
     {

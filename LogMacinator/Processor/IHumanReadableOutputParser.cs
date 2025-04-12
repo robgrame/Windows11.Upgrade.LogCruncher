@@ -1,10 +1,10 @@
-﻿using LogMacinator.Data;
+﻿using LogCruncher.Data;
 
-namespace LogMacinator.Processor
+namespace LogCruncher.Processor
 {
     internal interface IHumanReadableOutputParser
     {
-        Task IdentifyUpgradeIssuesAsync(HumanReadableOutput humanReadableOutput);
+        Task IdentifyCompatibilityIssuesAsync(HumanReadableOutput humanReadableOutput);
         Task<HumanReadableOutput> LoadXmlAsync(string filePath);
         Task ParseHumanReadableFilesAsync();
     }

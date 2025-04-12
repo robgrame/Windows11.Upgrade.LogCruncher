@@ -1,16 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using LogMacinator.Data;
+using LogCruncher.Data;
+using LogCruncher.EF;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Windows.Utils.Macinator.Config;
+using Windows.Utils.Macinator.EF;
 
-namespace LogMacinator.Processor
+namespace LogCruncher.Processor
 {
     internal class HumanReadableOutputParser : IHumanReadableOutputParser
     {
@@ -18,11 +23,13 @@ namespace LogMacinator.Processor
 
         private readonly ILogger<HumanReadableOutputParser> _logger;
         private readonly LogProcessorSettings _settings;
+        private readonly IServiceProvider _serviceProvider;
 
-        public HumanReadableOutputParser(ILogger<HumanReadableOutputParser> logger, IOptions<LogProcessorSettings> settings)
+        public HumanReadableOutputParser(ILogger<HumanReadableOutputParser> logger, IOptions<LogProcessorSettings> settings, IServiceProvider serviceProvider)
         {
             _logger = logger;
             _settings = settings.Value;
+            _serviceProvider = serviceProvider;
         }
 
         private async IAsyncEnumerable<string> GetHumanReadableFiles(string rootPath, string searchPattern)
@@ -73,7 +80,7 @@ namespace LogMacinator.Processor
                 var humanReadableOutput = await LoadXmlAsync(file);
 
                 // Analyze the properties
-                await IdentifyUpgradeIssuesAsync(humanReadableOutput);
+                await IdentifyCompatibilityIssuesAsync(humanReadableOutput);
             }
         }
 
@@ -100,7 +107,7 @@ namespace LogMacinator.Processor
             }
         }
 
-        public async Task IdentifyUpgradeIssuesAsync(HumanReadableOutput humanReadableOutput)
+        public async Task IdentifyCompatibilityIssuesAsync(HumanReadableOutput humanReadableOutput)
         {
             try
             {
@@ -143,10 +150,10 @@ namespace LogMacinator.Processor
                         }
                     }
 
-                    // Ensure computerName is not null or empty before calling SaveUpgradeIssuesAsync
+                    // Ensure computerName is not null or empty before calling SaveCompatibilityIssuesAsync
                     if (!string.IsNullOrEmpty(computerName))
                     {
-                        await SaveUpgradeIssuesAsync(computerName, matchingAssets);
+                        await SaveCompatibilityIssuesAsync(computerName, matchingAssets);
                     }
                     else
                     {
@@ -166,15 +173,107 @@ namespace LogMacinator.Processor
             }
         }
 
-        private async Task SaveUpgradeIssuesAsync(string computerName, List<PropertyList> propertyList)
+        private async Task SaveCompatibilityIssuesAsync(string computerName, List<PropertyList> propertyList)
         {
+            _logger.LogDebug("Saving upgrade issues to JSON file");
             // Save results to JSON with hostname in the filename
             var outputDirectory = Path.GetDirectoryName(_settings.OutputPath) ?? throw new InvalidOperationException("Output path directory is null.");
-            var outputFilePath = Path.Combine(outputDirectory, $"_UpgradeIssues.json");
+            var compatIssuesDirectory = Path.Combine(outputDirectory, "compat_issues"); 
+            var outputFilePath = Path.Combine(compatIssuesDirectory, $"{computerName}_CompatIssues.json");
+
+            // Check if the directory exists, if not create it
+            if (!Directory.Exists(compatIssuesDirectory))
+            {
+                Directory.CreateDirectory(compatIssuesDirectory);
+            }
+
+            // Delete previous file if it exists
+            if (File.Exists(outputFilePath))
+            {
+                File.Delete(outputFilePath);
+            }
+
             var json = JsonSerializer.Serialize(new { ComputerName = computerName, UpgradeIssues = propertyList }, new JsonSerializerOptions { WriteIndented = true });
+
+            if (_settings.SaveToDatabase)
+            {
+                _logger.LogDebug("Saving compatibility issues to database...");
+                await SaveCompatibilityIssuesToDB(computerName, propertyList.SelectMany(pl => pl.Properties ?? Enumerable.Empty<Property>()).Select(p => new PropertyEntity { Name = p.Name, Value = p.Value }).ToList());
+                _logger.LogTrace("Compatibility issues saved to database.");
+            }
+            else
+            {
+                _logger.LogDebug("Skipping saving to database as per configuration.");
+            }
+
             await File.WriteAllTextAsync(outputFilePath, json);
 
             _logger.LogInformation("HumanReadable file analysis completed. Results saved to {OutputFilePath}", outputFilePath);
+        }
+
+        private async Task SaveCompatibilityIssuesToDB(string computerName, List<PropertyEntity> propertyList)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetService<HumanReadableAnalysisContext>();
+            if (context == null)
+            {
+                _logger.LogError("DB Context is null");
+                return;
+            }
+
+            _logger.LogDebug("Initializing database...");
+            context.Database.EnsureCreated();
+            _logger.LogTrace("Database initialization completed.");
+
+            var hash = ComputeHash(computerName, propertyList);
+            var existingRecord = await context.CompatIssuesEntities.FirstOrDefaultAsync(e => e.Hash == hash);
+            if (existingRecord != null)
+            {
+                _logger.LogInformation("A record with the same hash already exists. Skipping insertion.");
+                return; // Skip adding duplicate record
+            }
+
+            var entity = new PropertyListEntity
+            {
+                ComputerName = computerName,
+                Type = "Inventory",
+                Properties = propertyList.Select(p => new PropertyEntity
+                {
+                    Name = p.Name,
+                    Value = p.Value,
+                }).ToList(),
+                Hash = hash
+            };
+
+            _logger.LogDebug("Adding Compatibility issues analysis results to database...");
+            context.CompatIssuesEntities.Add(entity);
+            _logger.LogTrace("Compatibility issues analysis results saved to database.");
+
+            // Save changes to the database
+            _logger.LogDebug("Saving changes to the database...");
+            await context.SaveChangesAsync();
+            _logger.LogTrace("Changes saved to the database.");
+        }
+
+        private string ComputeHash(string computerName, List<PropertyEntity> propertyList)
+        {
+            using var sha256 = SHA256.Create();
+            // create a unique string representation of the data
+            var sb = new StringBuilder();
+            sb.Append(computerName);
+            foreach (var property in propertyList)
+            {
+                sb.Append(property);
+                foreach (var prop in propertyList ?? Enumerable.Empty<PropertyEntity>())
+                {
+                    sb.Append(prop.Name);
+                    sb.Append(prop.Value);
+                }
+            }
+            var input = sb.ToString();
+
+            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+            return Convert.ToBase64String(hashBytes);
         }
 
     }

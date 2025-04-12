@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Windows.Utils.Macinator.EF
 {
 
-    public class EFSystemInfo
+    public class SystemInfoEntity
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid(); // Automatically generate a new Guid
@@ -27,7 +27,7 @@ namespace Windows.Utils.Macinator.EF
         public int ProcessorClock { get; set; }
     }
 
-    public class EFOperationResult
+    public class ACTOperationResultEntity
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid(); // Automatically generate a new Guid
@@ -38,31 +38,31 @@ namespace Windows.Utils.Macinator.EF
         public DateTime? EndTime { get; set; }
         public TimeSpan Elapsed { get; set; }
 
-        // Foreign key to EFLogAnalysisResult
+        // Foreign key to ACTLogAnalysisResultEntity
         public Guid LogAnalysisResultId { get; set; }
-        public EFLogAnalysisResult LogAnalysisResult { get; set; }
+        public ACTLogAnalysisResultEntity LogAnalysisResult { get; set; }
     }
 
 
-    public class EFUncompleteAction
+    public class ACTUncompleteActionEntity
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid(); // Automatically generate a new Guid
-        public string ActionName { get; set; }
+        public string? ActionName { get; set; }
         public DateTime? StartTime { get; set; }
     }
 
 
-    public class EFLogAnalysisResult
+    public class ACTLogAnalysisResultEntity
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid(); // Automatically generate a new Guid
         public Guid SystemInfoId { get; set; } // Foreign key property
-        public EFSystemInfo SystemInfo { get; set; }
-        public List<EFOperationResult> Results { get; set; }
+        public SystemInfoEntity SystemInfo { get; set; }
+        public List<ACTOperationResultEntity> Results { get; set; }
         public List<string> Failures { get; set; }
         public Guid UncompleteActionId { get; set; } // Foreign key property
-        public EFUncompleteAction? UncompleteAction { get; set; }
+        public ACTUncompleteActionEntity? UncompleteAction { get; set; }
         public string Hash { get; set; }
 
     }

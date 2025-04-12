@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using LogMacinator.Data;
+using LogCruncher.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -42,8 +42,8 @@ using Windows.Utils.Macinator.EF;
             {
                 _logger.LogDebug("Starting log analysis for {LogsRootPath}", logFile);
                 var logLines = ReadLogLines(logFile);
-                var results = new List<EFOperationResult>();
-                var uncompleteAction = new EFUncompleteAction { Id = Guid.NewGuid() }; // Ensure OperationId is set
+                var results = new List<ACTOperationResultEntity>();
+                var uncompleteAction = new ACTUncompleteActionEntity { Id = Guid.NewGuid() }; // Ensure OperationId is set
                 var failures = new List<string>();
                 var systemInfoDict = new Dictionary<string, string>();
                 var uniqueIds = new HashSet<int>();
@@ -174,11 +174,11 @@ using Windows.Utils.Macinator.EF;
                     _logger.LogError(ex, "An error occurred while processing the log.");
                 }
 
-                // Map dictionary to EFSystemInfo object with validation
-                var systemInfo = new EFSystemInfo
+                // Map dictionary to SystemInfoEntity object with validation
+                var systemInfo = new SystemInfoEntity
                 {
                     // retrieve the hostname from parent folder name
-                    Hostname = Path.GetFileName(Path.GetDirectoryName(logFile)) ?? "Unknown",
+                    Hostname = Path.GetFileName(Path.GetDirectoryName(logFile)) ?? $"Unknown{String.GetHashCode(Path.GetDirectoryName(logFile))}",
                     OsVersion = Environment.OSVersion.ToString(),
                     VM = ValidateString(systemInfoDict.GetValueOrDefault("VM") ?? string.Empty),
                     FirmwareType = ValidateString(systemInfoDict.GetValueOrDefault("Firmware type") ?? string.Empty),
@@ -207,13 +207,13 @@ using Windows.Utils.Macinator.EF;
 
         public void InitializeDatabase()
         {
-            // Get LogAnalysisContext from serviceProvider
+            // Get ACTLogAnalysisContext from serviceProvider
             using var scope = _serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetService<LogAnalysisContext>();
+            var context = scope.ServiceProvider.GetService<ACTLogAnalysisContext>();
 
             if (context == null)
             {
-                _logger.LogError("LogAnalysisContext is null");
+                _logger.LogError("ACTLogAnalysisContext is null");
                 return;
             }
 
@@ -223,26 +223,22 @@ using Windows.Utils.Macinator.EF;
         }
 
 
-        private async Task SaveAnalisysResultAsync(List<EFOperationResult> results, List<string> failures, EFSystemInfo systemInfo, EFUncompleteAction uncompleteAction)
+        private async Task SaveAnalisysResultAsync(List<ACTOperationResultEntity> results, List<string> failures, SystemInfoEntity systemInfo, ACTUncompleteActionEntity uncompleteAction)
         {
             // Save results to JSON with hostname in the filename
             var outputDirectory = Path.GetDirectoryName(_settings.OutputPath) ?? throw new InvalidOperationException("Output path directory is null.");
-            var outputFilePath = Path.Combine(outputDirectory, $"{systemInfo.Hostname}_output.json");
+            var upgradeIssuesDirectory = Path.Combine(outputDirectory, "upgrade_issues");
+            var outputFilePath = Path.Combine(upgradeIssuesDirectory, $"{systemInfo.Hostname}_UpgradeIssues.json");
 
             try
             {
-                if (File.Exists(outputFilePath))
-                {
-                    File.Delete(outputFilePath);
-                }
-
                 var json = JsonSerializer.Serialize(new { SystemInfo = systemInfo, Results = results, Failures = failures, UncompleteAction = uncompleteAction }, new JsonSerializerOptions { WriteIndented = true });
 
                 if (_settings.SaveToDatabase)
                 {
-                    // Get LogAnalysisContext from serviceProvider
+                    // Get ACTLogAnalysisContext from serviceProvider
                     using var scope = _serviceProvider.CreateScope();
-                    var context = scope.ServiceProvider.GetService<LogAnalysisContext>();
+                    var context = scope.ServiceProvider.GetService<ACTLogAnalysisContext>();
                     if (context == null)
                     {
                         _logger.LogError("DB Context is null");
@@ -258,7 +254,7 @@ using Windows.Utils.Macinator.EF;
                         return; // Skip adding duplicate record
                     }
 
-                    var efLogAnalysisResult = new EFLogAnalysisResult
+                    var efLogAnalysisResult = new ACTLogAnalysisResultEntity
                     {
                         SystemInfo = systemInfo,
                         SystemInfoId = systemInfo.Id,
@@ -278,6 +274,18 @@ using Windows.Utils.Macinator.EF;
                     _logger.LogDebug("Saving changes to the database...");
                     await context.SaveChangesAsync();
                     _logger.LogTrace("Changes saved to the database.");
+                }
+
+                _logger.LogDebug("Saving ACT upgrade issues to JSON file");
+                // Check if the directory exists, if not create it
+                if (!Directory.Exists(upgradeIssuesDirectory))
+                {
+                    Directory.CreateDirectory(upgradeIssuesDirectory);
+                }
+
+                if (File.Exists(outputFilePath))
+                {
+                    File.Delete(outputFilePath);
                 }
 
                 // save to file
@@ -309,7 +317,7 @@ using Windows.Utils.Macinator.EF;
             }
         }
 
-        private string ComputeHash(EFSystemInfo systemInfo, EFUncompleteAction uncompleteAction)
+        private string ComputeHash(SystemInfoEntity systemInfo, ACTUncompleteActionEntity uncompleteAction)
         {
             using var sha256 = SHA256.Create();
             var input = $"{systemInfo.Hostname}{systemInfo.OsVersion}{uncompleteAction.ActionName}{uncompleteAction.StartTime}";
@@ -334,7 +342,7 @@ using Windows.Utils.Macinator.EF;
             return long.TryParse(value, out var result) ? result : 0L;
         }
 
-        private EFOperationResult? ParseOperationDetails(string line, string operationName)
+        private ACTOperationResultEntity? ParseOperationDetails(string line, string operationName)
         {
             if (line.Contains("|") && !line.StartsWith("---")) // Skip headers or separators
             {
@@ -343,7 +351,7 @@ using Windows.Utils.Macinator.EF;
                 {
                     // Extract the ID from the first part of the line
                     var idPart = parts[0].Split(' ').Last().Trim();
-                    return new EFOperationResult
+                    return new ACTOperationResultEntity
                     {
                         OperationId = int.TryParse(idPart, out var id) ? id : -1,
                         Name = operationName,

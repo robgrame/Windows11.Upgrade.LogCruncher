@@ -1,3 +1,4 @@
+using LogCruncher.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Configuration;
@@ -6,35 +7,36 @@ using Windows.Utils.Macinator.Config;
 
 namespace Windows.Utils.Macinator.EF
 {
-    public class LogAnalysisContext : DbContext, IAsyncDisposable
+    public class ACTLogAnalysisContext : DbContext, IAsyncDisposable
     {
         private readonly DatabaseConnectionSettings _connectionSettings;
-        private ILogger<LogAnalysisContext> _logger;
+        private ILogger<ACTLogAnalysisContext> _logger;
 
-        public LogAnalysisContext(DbContextOptions<LogAnalysisContext> options,DatabaseConnectionSettings connectionSettings, ILogger<LogAnalysisContext> logger)
+        public ACTLogAnalysisContext(DbContextOptions<ACTLogAnalysisContext> options, DatabaseConnectionSettings connectionSettings, ILogger<ACTLogAnalysisContext> logger)
             :base(options)
         {
             _connectionSettings = connectionSettings;
             _logger = logger;
         }
 
-        public DbSet<EFSystemInfo> SystemInfos { get; set; }
-        public DbSet<EFOperationResult> OperationResults { get; set; }
-        public DbSet<EFUncompleteAction> UncompleteActions { get; set; }
-        public DbSet<EFLogAnalysisResult> LogAnalysisResults { get; set; }
+        public DbSet<SystemInfoEntity> SystemInfos { get; set; }
+        public DbSet<ACTOperationResultEntity> OperationResults { get; set; }
+        public DbSet<ACTUncompleteActionEntity> UncompleteActions { get; set; }
+        public DbSet<ACTLogAnalysisResultEntity> LogAnalysisResults { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                _logger.LogTrace("Configuring DbContext with connection string: {ConnectionString}", _connectionSettings.DefaultConnection);
-                ConfigureDatabaseProvider(optionsBuilder, _connectionSettings);
-            }
-            else
-            {
-                _logger.LogDebug("DbContext is already configured. Skipping configuration.");
-            }
-        }
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    if (!optionsBuilder.IsConfigured)
+        //    {
+        //        _logger.LogTrace("Configuring DbContext with connection string: {ConnectionString}", _connectionSettings.DefaultConnection);
+        //        ConfigureDatabaseProvider(optionsBuilder, _connectionSettings);
+        //    }
+        //    else
+        //    {
+        //        _logger.LogDebug("DbContext is already configured. Skipping configuration.");
+        //    }
+        //}
 
         private void ConfigureDatabaseProvider(DbContextOptionsBuilder optionsBuilder, DatabaseConnectionSettings connectionSettings)
         {
@@ -78,25 +80,25 @@ namespace Windows.Utils.Macinator.EF
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<EFLogAnalysisResult>()
+            modelBuilder.Entity<ACTLogAnalysisResultEntity>()
                 .HasOne(l => l.SystemInfo)
                 .WithOne()
-                .HasForeignKey<EFLogAnalysisResult>(l => l.SystemInfoId); // Fixed foreign key reference
+                .HasForeignKey<ACTLogAnalysisResultEntity>(l => l.SystemInfoId); // Fixed foreign key reference
 
-            modelBuilder.Entity<EFLogAnalysisResult>()
+            modelBuilder.Entity<ACTLogAnalysisResultEntity>()
                  .HasMany(l => l.Results)
                  .WithOne(r => r.LogAnalysisResult) // Specify the navigation property
                  .HasForeignKey(r => r.LogAnalysisResultId); // Use the new foreign key
 
-            modelBuilder.Entity<EFLogAnalysisResult>()
+            modelBuilder.Entity<ACTLogAnalysisResultEntity>()
                 .HasOne(l => l.UncompleteAction)
                 .WithOne()
-                .HasForeignKey<EFUncompleteAction>(l => l.Id); // Ensured correct foreign key reference
+                .HasForeignKey<ACTUncompleteActionEntity>(l => l.Id); // Ensured correct foreign key reference
 
             // Example: Adjust configurations for PostgreSQL
             if (Database.IsNpgsql())
             {
-                modelBuilder.Entity<EFLogAnalysisResult>()
+                modelBuilder.Entity<ACTLogAnalysisResultEntity>()
                     .Property(e => e.Id)
                     .HasColumnType("uuid");
             }
@@ -104,7 +106,7 @@ namespace Windows.Utils.Macinator.EF
             // Example: Adjust configurations for MySQL
             if (Database.IsMySql())
             {
-                modelBuilder.Entity<EFLogAnalysisResult>()
+                modelBuilder.Entity<ACTLogAnalysisResultEntity>()
                     .Property(e => e.Id)
                     .HasColumnType("char(36)");
             }

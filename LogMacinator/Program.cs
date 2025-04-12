@@ -1,5 +1,6 @@
-﻿using LogMacinator.Jobs;
-using LogMacinator.Processor;
+﻿using LogCruncher.EF;
+using LogCruncher.Jobs;
+using LogCruncher.Processor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
@@ -161,6 +162,7 @@ namespace Windows.Utils.Macinator
 
                     // Print out the configuration
                     var config = builder.Configuration.GetSection(nameof(LogProcessorSettings)).Get<LogProcessorSettings>();
+
                     if (config == null)
                     {
                         Log.Error("Configuration for LogProcessorSettings is null.");
@@ -196,9 +198,44 @@ namespace Windows.Utils.Macinator
                             return;
                         }
 
+                        // Register HumanReadableAnalysisContext with the appropriate database provider
+                        builder.Services.AddDbContext<HumanReadableAnalysisContext>((serviceProvider, options) =>
+                        {
+                            var connectionSettings = serviceProvider.GetRequiredService<DatabaseConnectionSettings>();
+                            var logger = serviceProvider.GetRequiredService<ILogger<HumanReadableAnalysisContext>>();
+
+                            // Configure the database provider based on the settings
+                            if (connectionSettings.DatabaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+                            {
+                                logger.LogDebug("Using SQL Server with connection string: {ConnectionString}", connectionSettings.DefaultConnection);
+                                options.UseSqlServer(connectionSettings.DefaultConnection, sqlOptions =>
+                                {
+                                    sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                                });
+                            }
+                            else if (connectionSettings.DatabaseProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                logger.LogDebug("Using PostgreSQL with connection string: {ConnectionString}", connectionSettings.DefaultConnection);
+                                options.UseNpgsql(connectionSettings.DefaultConnection);
+                            }
+                            else if (connectionSettings.DatabaseProvider.Equals("MySQL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                logger.LogDebug("Using MySQL with connection string: {ConnectionString}", connectionSettings.DefaultConnection);
+                                options.UseMySql(connectionSettings.DefaultConnection, ServerVersion.AutoDetect(connectionSettings.DefaultConnection));
+                            }
+                            else
+                            {
+                                logger.LogError("Unsupported database provider: {DatabaseProvider}", connectionSettings.DatabaseProvider);
+                                throw new InvalidOperationException("Unsupported database provider.");
+                            }
+
+                            options.EnableSensitiveDataLogging();
+                        });
+
+
                         // Add database context
                         Log.Debug("Configuring database context with provider: {DbProvider}", dbConfiguration.DatabaseProvider);
-                        builder.Services.AddDbContext<LogAnalysisContext>((serviceProvider, options) =>
+                        builder.Services.AddDbContext<ACTLogAnalysisContext>((serviceProvider, options) =>
                         {
                             var connectionSettings = serviceProvider.GetRequiredService<DatabaseConnectionSettings>();
 

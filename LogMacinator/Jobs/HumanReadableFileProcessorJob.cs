@@ -1,4 +1,4 @@
-﻿using LogMacinator.Processor;
+﻿using LogCruncher.Processor;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LogMacinator.Jobs
+namespace LogCruncher.Jobs
 {
     internal class HumanReadableFileProcessorJob : IJob
     {

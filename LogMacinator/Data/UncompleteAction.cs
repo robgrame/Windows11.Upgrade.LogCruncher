@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LogMacinator.Data
+namespace LogCruncher.Data
 {
     internal class UncompleteAction
     {
