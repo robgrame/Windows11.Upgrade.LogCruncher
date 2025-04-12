@@ -21,6 +21,9 @@ namespace LogCruncher.EF
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            _logger.LogDebug("Configuring model for PropertyListEntity...");
+
+            modelBuilder.Entity<PropertyListEntity>().ToTable("CompatIssuesEntities");
             base.OnModelCreating(modelBuilder);
         }
     }

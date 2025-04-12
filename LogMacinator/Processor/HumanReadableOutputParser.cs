@@ -215,7 +215,7 @@ namespace LogCruncher.Processor
             _logger.LogDebug("Saving upgrade issues to JSON file");
             // Save results to JSON with hostname in the filename
             var outputDirectory = Path.GetDirectoryName(_settings.OutputPath) ?? throw new InvalidOperationException("Output path directory is null.");
-            var compatIssuesDirectory = Path.Combine(outputDirectory, "compat_issues"); 
+            var compatIssuesDirectory = Path.Combine(outputDirectory, "compat_issues");
             var outputFilePath = Path.Combine(compatIssuesDirectory, $"{computerName}_CompatIssues.json");
 
             // Check if the directory exists, if not create it
@@ -262,34 +262,47 @@ namespace LogCruncher.Processor
             context.Database.EnsureCreated();
             _logger.LogTrace("Database initialization completed.");
 
-            var hash = ComputeHash(computerName, propertyList);
-            var existingRecord = await context.CompatIssuesEntities.FirstOrDefaultAsync(e => e.Hash == hash);
-            if (existingRecord != null)
+            try
             {
-                _logger.LogInformation("A record with the same hash already exists. Skipping insertion.");
-                return; // Skip adding duplicate record
-            }
-
-            var entity = new PropertyListEntity
-            {
-                ComputerName = computerName,
-                Type = "Inventory",
-                Properties = propertyList.Select(p => new PropertyEntity
+                var hash = ComputeHash(computerName, propertyList);
+                var existingRecord = await context.CompatIssuesEntities.FirstOrDefaultAsync(e => e.Hash == hash);
+                if (existingRecord != null)
                 {
-                    Name = p.Name,
-                    Value = p.Value,
-                }).ToList(),
-                Hash = hash
-            };
+                    _logger.LogInformation("A record with the same hash already exists. Skipping insertion.");
+                    return; // Skip adding duplicate record
+                }
 
-            _logger.LogDebug("Adding Compatibility issues analysis results to database...");
-            context.CompatIssuesEntities.Add(entity);
-            _logger.LogTrace("Compatibility issues analysis results saved to database.");
+                var entity = new PropertyListEntity
+                {
+                    ComputerName = computerName,
+                    Type = "Inventory",
+                    Properties = propertyList.Select(p => new PropertyEntity
+                    {
+                        Name = p.Name,
+                        Value = p.Value,
+                    }).ToList(),
+                    Hash = hash
+                };
 
-            // Save changes to the database
-            _logger.LogDebug("Saving changes to the database...");
-            await context.SaveChangesAsync();
-            _logger.LogTrace("Changes saved to the database.");
+                _logger.LogDebug("Adding Compatibility issues analysis results to database...");
+                context.CompatIssuesEntities.Add(entity);
+                _logger.LogTrace("Compatibility issues analysis results saved to database.");
+
+                // Save changes to the database
+                _logger.LogDebug("Saving changes to the database...");
+                await context.SaveChangesAsync();
+                _logger.LogTrace("Changes saved to the database.");
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error saving compatibility issues to database");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred while saving compatibility issues to database");
+                throw;
+            }
         }
 
         private string ComputeHash(string computerName, List<PropertyEntity> propertyList)
