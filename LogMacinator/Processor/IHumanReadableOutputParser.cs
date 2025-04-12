@@ -4,8 +4,8 @@ namespace LogCruncher.Processor
 {
     internal interface IHumanReadableOutputParser
     {
-        Task IdentifyCompatibilityIssuesAsync(HumanReadableOutput humanReadableOutput);
-        Task<HumanReadableOutput> LoadXmlAsync(string filePath);
+        Task IdentifyCompatibilityIssuesAsync(HumanReadableOutputEntity humanReadableOutput);
+        Task<HumanReadableOutputEntity> LoadXmlAsync(string filePath);
         Task ParseHumanReadableFilesAsync();
     }
 }

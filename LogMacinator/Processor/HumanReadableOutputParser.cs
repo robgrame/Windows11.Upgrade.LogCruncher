@@ -85,14 +85,14 @@ namespace LogCruncher.Processor
         }
 
 
-        public async Task<HumanReadableOutput> LoadXmlAsync(string filePath)
+        public async Task<HumanReadableOutputEntity> LoadXmlAsync(string filePath)
         {
             try
             {
                 XmlSerializer serializer = new XmlSerializer(typeof(HumanReadableOutput));
                 using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
                 {
-                    var result = await Task.Run(() => serializer.Deserialize(fileStream) as HumanReadableOutput);
+                    var result = await Task.Run(() => serializer.Deserialize(fileStream) as HumanReadableOutputEntity);
                     if (result == null)
                     {
                         throw new InvalidOperationException("Deserialization returned null");
@@ -107,7 +107,7 @@ namespace LogCruncher.Processor
             }
         }
 
-        public async Task IdentifyCompatibilityIssuesAsync(HumanReadableOutput humanReadableOutput)
+        public async Task IdentifyCompatibilityIssuesAsync(HumanReadableOutputEntity humanReadableOutput)
         {
             try
             {
@@ -117,9 +117,9 @@ namespace LogCruncher.Processor
                 var computerName = humanReadableOutput.RunInfos?.RunInfo?.FirstOrDefault()?.Components?.FirstOrDefault(c => c.Type == "Metadata")?.Properties?.FirstOrDefault(p => p.Name == "ComputerName")?.Value;
                 _logger.LogDebug("ComputerName: {ComputerName}", computerName);
 
-                var matchingAssets = new List<PropertyList>();
+                var matchingAssets = new List<PropertyListEntity>();
 
-                foreach (var asset in humanReadableOutput.Assets ?? Enumerable.Empty<Asset>())
+                foreach (var asset in humanReadableOutput.Assets ?? Enumerable.Empty<AssetEntity>())
                 {
                     var inventoryPropertyList = asset.PropertyLists?
                         .FirstOrDefault(pl => pl.Type == "Inventory");
@@ -128,7 +128,7 @@ namespace LogCruncher.Processor
                     {
                         var hasBlockingProperties = asset.PropertyLists?
                             .Where(pl => pl.Type == "DecisionMaker")
-                            .SelectMany(pl => pl.Properties ?? Enumerable.Empty<Property>())
+                            .SelectMany(pl => pl.Properties ?? Enumerable.Empty<PropertyEntity>())
                             .Any(p => (p.Name == "DT_ANY_SVH_BlockingSV" || p.Name == "DT_ANY_SYS_BlockingSystem") && p.Value == "TRUE");
 
                         if (hasBlockingProperties == true)
@@ -144,7 +144,7 @@ namespace LogCruncher.Processor
                     _logger.LogDebug("Assets with blocking properties:");
                     foreach (var inventory in matchingAssets)
                     {
-                        foreach (var property in inventory.Properties ?? Enumerable.Empty<Property>())
+                        foreach (var property in inventory.Properties ?? Enumerable.Empty<PropertyEntity>())
                         {
                             _logger.LogDebug("{Name}: {Value}", property.Name, property.Value);
                         }
@@ -173,7 +173,7 @@ namespace LogCruncher.Processor
             }
         }
 
-        private async Task SaveCompatibilityIssuesAsync(string computerName, List<PropertyList> propertyList)
+        private async Task SaveCompatibilityIssuesAsync(string computerName, List<PropertyListEntity> propertyList)
         {
             _logger.LogDebug("Saving upgrade issues to JSON file");
             // Save results to JSON with hostname in the filename
@@ -198,7 +198,7 @@ namespace LogCruncher.Processor
             if (_settings.SaveToDatabase)
             {
                 _logger.LogDebug("Saving compatibility issues to database...");
-                await SaveCompatibilityIssuesToDB(computerName, propertyList.SelectMany(pl => pl.Properties ?? Enumerable.Empty<Property>()).Select(p => new PropertyEntity { Name = p.Name, Value = p.Value }).ToList());
+                await SaveCompatibilityIssuesToDB(computerName, propertyList.SelectMany(pl => pl.Properties ?? Enumerable.Empty<PropertyEntity>()).Select(p => new PropertyEntity { Name = p.Name, Value = p.Value }).ToList());
                 _logger.LogTrace("Compatibility issues saved to database.");
             }
             else
