@@ -13,7 +13,7 @@ namespace LogCruncher.Data
         [ForeignKey(nameof(RunInfosId))]
         public RunInfosEntity? RunInfos { get; set; }
 
-        public ICollection<AssetEntity>? Assets { get; set; }
+        public List<AssetEntity>? Assets { get; set; }
     }
 
     public class RunInfosEntity
@@ -29,7 +29,7 @@ namespace LogCruncher.Data
         [Key]
         public int Id { get; set; }
 
-        public ICollection<ComponentEntity>? Components { get; set; }
+        public List<ComponentEntity>? Components { get; set; }
     }
 
     public class ComponentEntity
@@ -43,7 +43,7 @@ namespace LogCruncher.Data
         [MaxLength(255)]
         public string? TypeIdentifier { get; set; }
 
-        public ICollection<PropertyEntity>? Properties { get; set; }
+        public List<PropertyEntity>? Properties { get; set; }
     }
 
     public class AssetEntity
@@ -51,7 +51,7 @@ namespace LogCruncher.Data
         [Key]
         public int Id { get; set; }
 
-        public ICollection<PropertyListEntity>? PropertyLists { get; set; }
+        public List<PropertyListEntity>? PropertyLists { get; set; }
     }
 
     public class PropertyListEntity
@@ -61,7 +61,7 @@ namespace LogCruncher.Data
         public string? ComputerName { get; set; }
         [MaxLength(255)]
         public string? Type { get; set; }
-        public ICollection<PropertyEntity>? Properties { get; set; }
+        public List<PropertyEntity>? Properties { get; set; }
         public string Hash { get; set; }
     }
 

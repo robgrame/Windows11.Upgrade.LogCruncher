@@ -89,15 +89,51 @@ namespace LogCruncher.Processor
         {
             try
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(HumanReadableOutputEntity));
+                XmlSerializer serializer = new XmlSerializer(typeof(HumanReadableOutput));
                 using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
                 {
-                    var result = await Task.Run(() => serializer.Deserialize(fileStream) as HumanReadableOutputEntity);
-                    if (result == null)
+                    var humanReadableOutput = await Task.Run(() => serializer.Deserialize(fileStream) as HumanReadableOutput);
+                    if (humanReadableOutput == null)
                     {
                         throw new InvalidOperationException("Deserialization returned null");
                     }
-                    return result;
+
+                    // Map HumanReadableOutput to HumanReadableOutputEntity
+                    var entity = new HumanReadableOutputEntity
+                    {
+                        RunInfos = humanReadableOutput.RunInfos != null ? new RunInfosEntity
+                        {
+                            RunInfo = humanReadableOutput.RunInfos.RunInfo?.Select(ri => new RunInfoEntity
+                            {
+                                Components = ri.Components?.Select(c => new ComponentEntity
+                                {
+                                    Type = c.Type,
+                                    TypeIdentifier = c.TypeIdentifier,
+                                    Properties = c.Properties?.Select(p => new PropertyEntity
+                                    {
+                                        Name = p.Name,
+                                        Value = p.Value,
+                                        Ordinal = p.Ordinal
+                                    }).ToList()
+                                }).ToList()
+                            }).ToList()
+                        } : null,
+                        Assets = humanReadableOutput.Assets?.Select(a => new AssetEntity
+                        {
+                            PropertyLists = a.PropertyLists?.Select(pl => new PropertyListEntity
+                            {
+                                Type = pl.Type,
+                                Properties = pl.Properties?.Select(p => new PropertyEntity
+                                {
+                                    Name = p.Name,
+                                    Value = p.Value,
+                                    Ordinal = p.Ordinal
+                                }).ToList()
+                            }).ToList()
+                        }).ToList()
+                    };
+
+                    return entity;
                 }
             }
             catch (Exception ex)
@@ -106,6 +142,7 @@ namespace LogCruncher.Processor
                 throw;
             }
         }
+
 
         public async Task IdentifyCompatibilityIssuesAsync(HumanReadableOutputEntity humanReadableOutput)
         {

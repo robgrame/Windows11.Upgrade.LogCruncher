@@ -27,6 +27,17 @@ namespace LogCruncher.Jobs
             {
                 await _humanReadableOutputParser.ParseHumanReadableFilesAsync();
                 _logger.LogInformation("Successfully completed execution of HumanReadableFileProcessorJob at {Time}", DateTimeOffset.Now);
+
+                // retrieve next fire time of the job from the context
+                var nextFireTime = context.NextFireTimeUtc?.DateTime;
+                if (nextFireTime.HasValue)
+                {
+                    _logger.LogInformation("Job {jobname} next fire time {firetime}:", nameof(HumanReadableFileProcessorJob), nextFireTime.Value);
+                }
+                else
+                {
+                    _logger.LogWarning("Job {jobname} Next fire time is not available.", nameof(HumanReadableFileProcessorJob));
+                }
             }
             catch (Exception ex)
             {
