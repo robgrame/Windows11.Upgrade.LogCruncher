@@ -303,10 +303,31 @@ namespace Windows.Utils.Macinator
                             var jobName = jobConfig["JobName"];
                             var jobGroup = jobConfig["JobGroup"];
                             var jobDescription = jobConfig["JobDescription"];
+
                             if (string.IsNullOrEmpty(jobName))
                             {
                                 Log.Error("JobName is null or empty in configuration.");
                                 continue;
+                            }
+
+                            if (jobName == "LogsAnalysisJob")
+                            {
+                                var jobKey = new JobKey(jobName, jobGroup);
+                                q.AddJob<LogsAnalysisJob>(j => j
+                                    .WithIdentity(jobKey)
+                                    .WithDescription(jobDescription));
+
+                                q.AddTrigger(t => t
+                                    .WithIdentity(jobConfig["TriggerName"], jobConfig["TriggerGroup"])
+                                    .ForJob(jobKey)
+                                    .WithCronSchedule(jobConfig["CronExpression"]));
+
+                                Log.Information("Configured job: {jobName} with trigger: {triggerName}", jobName, jobConfig["TriggerName"]);
+                                // print the job schedule in human readable format
+                                var cronExpression = jobConfig["CronExpression"];
+                                var cron = new CronExpression(cronExpression);
+                                var nextFireTime = cron.GetNextValidTimeAfter(DateTimeOffset.Now);
+                                Log.Information("Next fire time for {jobName} occurs at: {nextFireTime} ", jobName, nextFireTime?.ToString("yyyy-MM-dd HH:mm:ss"));
                             }
 
                             if (jobName == "HumanReadableFileProcessorJob")
