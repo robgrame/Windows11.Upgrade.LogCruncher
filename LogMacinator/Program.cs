@@ -26,15 +26,13 @@ namespace Windows.Utils.Macinator
         static async Task Main(string[] args)
         {
 
+            bool isService = false;
+            bool isConsole = false;
+            string logsRootPath = string.Empty;
+            string outputPath = string.Empty;
 
             try
             {
-                bool isService = false;
-                bool isConsole = false;
-                string logsRootPath = string.Empty;
-                string outputPath = string.Empty;
-
-
                 var builder = Host.CreateApplicationBuilder(args);
 
                 var exePath = Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!;
@@ -50,6 +48,7 @@ namespace Windows.Utils.Macinator
 
                 Console.WriteLine();
                 Console.WriteLine("------------------------------------------------------------------------------------------------------", Console.ForegroundColor = ConsoleColor.White);
+                Console.WriteLine();
                 Console.WriteLine("Windows 11 Setup Upgrade analyzer (aka Log Cruncher)", Console.ForegroundColor = ConsoleColor.Green);
                 Console.WriteLine("Version: {0}", System.Diagnostics.FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly()?.Location ?? string.Empty).FileVersion?.ToString() ?? "Unknown version");
                 Console.WriteLine("This program is licensed under GPL 3.0");
