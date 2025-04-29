@@ -3,11 +3,6 @@ using LogCruncher.Processor;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Windows.Utils.Macinator.Config;
 using Windows.Utils.Macinator.EF;
@@ -32,26 +27,26 @@ namespace LogCruncher.Jobs
             try
             {
                 _logger.LogDebug("Searching for Human readable xml files");
-                await foreach (var file in GetUpgradeLogFiles(_settings.LogsRootPath , _settings.CompatLogFilePattern))
+                await foreach (var humanReadableFile in GetUpgradeLogFiles(_settings.LogsRootPath , _settings.CompatLogFilePattern))
                 {
-                    if (string.IsNullOrEmpty(file))
+                    if (string.IsNullOrEmpty(humanReadableFile))
                     {
                         _logger.LogWarning("File path is null or empty.");
                         continue;
                     }
 
-                    _logger.LogDebug("Found file: {FilePath}", file);
+                    _logger.LogDebug("Found humanReadableFile: {FilePath}", humanReadableFile);
 
-                    _logger.LogDebug("Loading human readable XML file: {FilePath}", file);
-                    var humanReadableOutput = await LoadHumanrReadableXMLFileAsync(file);
+                    _logger.LogDebug("Loading human readable XML humanReadableFile: {FilePath}", humanReadableFile);
+                    var parsedHumanReadableOutput = await LoadHumanrReadableXMLFileAsync(humanReadableFile);
 
                     // Retrive the computer name from the human readable output
-                    if (humanReadableOutput != null)
+                    if (parsedHumanReadableOutput != null)
                     {
-                        var computerName = humanReadableOutput.RunInfos?.RunInfo?.FirstOrDefault()?.Components?.FirstOrDefault(c => c.Type == "Metadata")?.Properties?.FirstOrDefault(p => p.Name == "ComputerName")?.Value;
+                        var computerName = parsedHumanReadableOutput.RunInfos?.RunInfo?.FirstOrDefault()?.Components?.FirstOrDefault(c => c.Type == "Metadata")?.Properties?.FirstOrDefault(p => p.Name == "ComputerName")?.Value;
                         _logger.LogDebug("ComputerName: {ComputerName}", computerName);
 
-                        var compatibilityIssues = IdentifyCompatibilityIssues(humanReadableOutput);
+                        var compatibilityIssues = IdentifyCompatibilityIssues(parsedHumanReadableOutput);
                         if (compatibilityIssues != null)
                         {
                             _logger.LogDebug("Identified compatibility issues:");
@@ -71,31 +66,34 @@ namespace LogCruncher.Jobs
 
                             // Since no compatibility issues were found, we can proceed with SetupACT log processing
                             _logger.LogDebug("Processing SetupACT log files");
-                            
+
+                            // retrieve the Humarn readable file path
+
+
                             await foreach (var setupActLogFile in GetUpgradeLogFiles(_settings.LogsRootPath, _settings.SetupActLogFilePattern))
                             {
                                 if (!string.IsNullOrEmpty(setupActLogFile))
                                 {
-                                    _logger.LogDebug("Processing SetupACT log file: {FilePath}", setupActLogFile);
-                                    // Process the SetupACT log file as needed
+                                    _logger.LogDebug("Processing SetupACT log humanReadableFile: {FilePath}", setupActLogFile);
+                                    // Process the SetupACT log humanReadableFile as needed
 
                                 }
                                 else
                                 {
-                                    _logger.LogWarning("SetupACT log file path is null or empty.");
+                                    _logger.LogWarning("SetupACT log humanReadableFile path is null or empty.");
                                 }
                             }
 
                         }
                     }
-                    else if (humanReadableOutput == null)
+                    else if (parsedHumanReadableOutput == null)
                     {
-                        _logger.LogWarning("Failed to load human readable XML file: {FilePath}", file);
+                        _logger.LogWarning("Failed to load human readable XML humanReadableFile: {FilePath}", humanReadableFile);
                         continue;
                     }
 
 
-                    // Process the file as needed
+                    // Process the humanReadableFile as needed
 
 
                 }
@@ -150,7 +148,7 @@ namespace LogCruncher.Jobs
             var files = await Task.Run(GetFiles);
             foreach (var file in files)
             {
-                _logger?.LogDebug("Found file: {FilePath}", file);
+                _logger?.LogDebug("Found humanReadableFile: {FilePath}", file);
                 yield return file;
             }
         }
@@ -425,7 +423,7 @@ namespace LogCruncher.Jobs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading XML from file: {FilePath}", filePath);
+                _logger.LogError(ex, "Error loading XML from humanReadableFile: {FilePath}", filePath);
                 throw;
             }
         }

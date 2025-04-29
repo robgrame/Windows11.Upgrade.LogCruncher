@@ -11,7 +11,6 @@ namespace LogCruncher.Processor
     {
         private readonly ISetupACTLogProcessor _setupACTLogProcessor;
         private readonly IHumanReadableOutputParser _humanReadableOutputParser;
-        private readonly 
 
 
         public LogsAnalyzer(ISetupACTLogProcessor setupACTLogProcessor, IHumanReadableOutputParser humanReadableOutputParser)
